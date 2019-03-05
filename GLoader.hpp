@@ -8,12 +8,6 @@
 #include <dlfcn.h>
 #endif
 
-template<typename Data>
-struct GLoadedData {
-	std::string	libname;
-	Data		data;
-};
-
 class GLoader {
 	public:
 		~GLoader() {
@@ -26,66 +20,66 @@ class GLoader {
 			}
 		}
 
-		template<typename Data>
+		template<typename Symbole>
 		#ifdef _WIN32
-		GLoadedData<Data>	load(const std::string &libname, const std::string &name)
+		Symbole	load(const std::string &lib_path, const std::string &symbole_name)
 		#else
-		GLoadedData<Data>	load(const std::string &libname, const std::string &name, const int &flag = RTLD_LAZY)
+		Symbole	load(const std::string &lib_path, const std::string &symbole_name, const int &flag = RTLD_LAZY)
 		#endif
 		{
 			#ifdef _WIN32
-			open_lib(libname);
-			Data	data = (Data)GetProcAddress(_hdlrs[libname], name.c_str());
+			open_lib(lib_path);
+			Symbole	sym = (Symbole)GetProcAddress(_hdlrs[lib_path], symbole_name.c_str());
 
-			if (!data) {
-				FreeLibrary(_hdlrs[libname]);
+			if (!sym) {
+				FreeLibrary(_hdlrs[lib_path]);
 				throw std::exception();
 			}
 			#else
-			open_lib(libname, flag);
-			Data	data = (Data)dlsym(_hdlrs[libname], name.c_str());
+			open_lib(lib_path, flag);
+			Symbole	sym = (Data)dlsym(_hdlrs[lib_path], symbole_name.c_str());
 
-			if (!data || dlerror()) {
-				dlclose(_hdlrs[libname]);
+			if (!sym || dlerror()) {
+				dlclose(_hdlrs[lib_path]);
 				throw std::exception();
 			}
 			#endif
-			return GLoadedData<Data>{libname, data};
+			return sym;
 		}
 
-		void	unload(const std::string &libname) {
-			if (_hdlrs.find(libname) != _hdlrs.end()) {
+		void	unload(const std::string &lib_path) {
+			if (_hdlrs.find(lib_path) != _hdlrs.end()) {
 				#ifdef _WIN32
-				FreeLibrary(_hdlrs[libname]);
+				FreeLibrary(_hdlrs[lib_path]);
 				#else
-				dlclose(_hdlrs[libname]);
+				dlclose(_hdlrs[lib_path]);
 				#endif
 			}
 		}
 
 	private:
 		#ifdef _WIN32
-		void	open_lib(const std::string &libname)
+		void	open_lib(const std::string &lib_path)
 		#else
-		void	open_lib(const std::string &libname, const int &flag)
+		void	open_lib(const std::string &lib_path, const int &flag)
 		#endif
 		{
-			if (_hdlrs.find(libname) != _hdlrs.end())
+			if (_hdlrs.find(lib_path) != _hdlrs.end())
 				return;
 			#ifdef _WIN32
 			HMODULE	hdlr;
 
-			hdlr = LoadLibraryA(libname.c_str());
+			hdlr = LoadLibraryA(lib_path.c_str());
 			if (!hdlr)
 				throw std::exception();
 			#else
 			void	*hdlr;
 
-			hdlr = dlopen(libname.c_str(), flag);
+			hdlr = dlopen(lib_path.c_str(), flag);
 			if (!hdlr || dlerror())
 				throw std::exception();
 			#endif
-			_hdlrs[libname] = hdlr;
+			_hdlrs[lib_path] = hdlr;
 		}
 
 		/* data */
