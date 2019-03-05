@@ -37,7 +37,7 @@ class GLoader {
 			}
 			#else
 			open_lib(lib_path, flag);
-			Symbole	sym = (Data)dlsym(_hdlrs[lib_path], symbole_name.c_str());
+			Symbole	sym = (Symbole)dlsym(_hdlrs[lib_path], symbole_name.c_str());
 
 			if (!sym || dlerror()) {
 				dlclose(_hdlrs[lib_path]);
